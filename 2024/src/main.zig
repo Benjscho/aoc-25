@@ -16,6 +16,8 @@ pub fn main() !void {
     var line = std.Io.Writer.Allocating.init(alloc);
     defer line.deinit();
 
+    var left: std.ArrayListUnmanaged(i32) = .{};
+    var right: std.ArrayListUnmanaged(i32) = .{};
     while (true) {
         _ = reader.streamDelimiter(&line.writer, '\n') catch |err| {
             if (err == error.EndOfStream) break else return err;
@@ -24,9 +26,19 @@ pub fn main() !void {
         const res = parse_line(line.written()) catch {
             break;
         };
-        std.debug.print("sum is: {d}\n", .{res[0] + res[1]});
+        try left.append(alloc, res[0]);
+        try right.append(alloc, res[1]);
         line.clearRetainingCapacity(); // reset the accumulating buffer.
     }
+
+    std.mem.sort(i32, left.items, {}, std.sort.asc(i32));
+    std.mem.sort(i32, right.items, {}, std.sort.asc(i32));
+
+    var res: u32 = 0;
+    for (left.items, right.items) |v1, v2| {
+        res += @abs(v1 - v2);
+    }
+    std.debug.print("result is {d}\n", .{res});
 }
 
 fn parse_line(line: []u8) ![2]i32 {
