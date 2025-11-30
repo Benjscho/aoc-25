@@ -38,7 +38,24 @@ pub fn main() !void {
     for (left.items, right.items) |v1, v2| {
         res += @abs(v1 - v2);
     }
-    std.debug.print("result is {d}\n", .{res});
+    std.debug.print("part 1 result is {d}\n", .{res});
+
+    var right_map = std.AutoHashMap(i32, i32).init(alloc);
+    for (right.items) |val| {
+        const gop = try right_map.getOrPut(val);
+        if (gop.found_existing) {
+            gop.value_ptr.* += 1;
+        } else {
+            gop.value_ptr.* = 1;
+        }
+    }
+
+    res = 0;
+    for (left.items) |val| {
+        const multiple = right_map.get(val) orelse 0;
+        res += @intCast(val * multiple);
+    }
+    std.debug.print("part 2 result is {d}\n", .{res});
 }
 
 fn parse_line(line: []u8) ![2]i32 {
