@@ -52,7 +52,8 @@ fn day_one() !void {
     var line = std.Io.Writer.Allocating.init(alloc);
     defer line.deinit();
 
-    var pt1_res: usize = 0;
+    var pt1_res: u32 = 0;
+    var pt2_res: u32 = 0;
     var dial_pos: i32 = 50;
     while (true) {
         _ = reader.streamDelimiter(&line.writer, '\n') catch |err| {
@@ -65,8 +66,16 @@ fn day_one() !void {
         dial_pos = @mod(dial_pos + res, 100);
         if (dial_pos == 0)
             pt1_res += 1;
+        pt2_res += @divFloor(@abs(res), 100);
+        if (res > 0 and dial_pos < (@mod(res, 100)) and dial_pos != 0)
+            pt2_res += 1;
+        if (res < 0 and dial_pos > 100 - (@abs(res) % 100))
+            pt2_res += 1;
+
         line.clearRetainingCapacity(); // reset the accumulating buffer.
     }
+    pt2_res += pt1_res;
 
     std.debug.print("part 1 result is {d}\n", .{pt1_res});
+    std.debug.print("part 2 result is {d}\n", .{pt2_res});
 }
