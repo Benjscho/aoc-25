@@ -139,17 +139,17 @@ fn day_two() !void {
     var line = std.Io.Writer.Allocating.init(alloc);
     defer line.deinit();
 
-    var reports: std.ArrayListUnmanaged(*std.ArrayListUnmanaged(i32)) = .{};
+    var reports: std.ArrayListUnmanaged(std.ArrayListUnmanaged(i32)) = .{};
     var pt1_res: u32 = 0;
     while (true) {
         _ = reader.streamDelimiter(&line.writer, '\n') catch |err| {
             if (err == error.EndOfStream) break else return err;
         };
         _ = reader.toss(1); // skip the delimiter byte.
-        var level = L.parse_line(line.written()) catch {
+        const level = L.parse_line(line.written()) catch {
             break;
         };
-        try reports.append(alloc, &level);
+        try reports.append(alloc, level);
         if (L.is_safe(level.items))
             pt1_res += 1;
 
@@ -157,4 +157,26 @@ fn day_two() !void {
     }
 
     std.debug.print("part 1 result is {d}\n", .{pt1_res});
+
+    var pt2_res: u32 = 0;
+    for (reports.items) |*report| {
+        std.debug.print("{any}\n", .{report.items});
+        if (L.is_safe(report.items)) {
+            pt2_res += 1;
+            continue;
+        }
+        var i: usize = 0;
+        while (i < report.items.len) {
+            const tmp = report.orderedRemove(i);
+            std.debug.print("{any}\n", .{report.items});
+            if (L.is_safe(report.items)) {
+                pt2_res += 1;
+                break;
+            }
+            try report.insert(alloc, i, tmp);
+
+            i += 1;
+        }
+    }
+    std.debug.print("part 2 result is {d}\n", .{pt2_res});
 }
