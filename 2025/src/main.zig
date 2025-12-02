@@ -97,6 +97,20 @@ fn day_two() !void {
         fn is_invalid(num: usize) !bool {
             var b: [26]u8 = undefined;
             const str = try std.fmt.bufPrint(&b, "{d}", .{num});
+            //std.debug.print("formatted {s}\n", .{str});
+            if (str.len % 2 == 1)
+                return false;
+            const split = str.len / 2;
+            if (std.mem.eql(u8, str[0..split], str[split..])) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        fn is_invalid_n_reps(num: usize) !bool {
+            var b: [26]u8 = undefined;
+            const str = try std.fmt.bufPrint(&b, "{d}", .{num});
             std.debug.print("formatted {s}\n", .{str});
             var i: usize = 0;
             while (i < str.len / 2) {
@@ -104,6 +118,10 @@ fn day_two() !void {
                 var valid = false;
                 const step = j;
                 while (j < str.len and !valid) {
+                    if (j + step > str.len) {
+                        valid = true;
+                        break;
+                    }
                     std.debug.print("checking {s} {s} \n", .{ str[0 .. i + 1], str[j .. j + step] });
                     if (!std.mem.eql(u8, str[0 .. i + 1], str[j .. j + step])) {
                         //std.debug.print("found mismatch, so valid {s} {s} \n", .{ str[0 .. i + 1], str[j .. j + step] });
@@ -134,6 +152,7 @@ fn day_two() !void {
     defer line.deinit();
 
     var pt1_res: usize = 0;
+    var pt2_res: usize = 0;
     while (true) {
         _ = reader.streamDelimiter(&line.writer, ',') catch |err| {
             if (err == error.EndOfStream) break else return err;
@@ -147,10 +166,13 @@ fn day_two() !void {
         while (i <= res[1]) {
             if (try L.is_invalid(i))
                 pt1_res += i;
+            if (try L.is_invalid_n_reps(i))
+                pt2_res += i;
             i += 1;
         }
 
         line.clearRetainingCapacity(); // reset the accumulating buffer.
     }
     std.debug.print("part 1 result is {d}\n", .{pt1_res});
+    std.debug.print("part 2 result is {d}\n", .{pt2_res});
 }
