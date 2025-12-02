@@ -26,6 +26,8 @@ pub fn main() !void {
 
     if (res.args.day == 1)
         try day_one();
+    if (res.args.day == 2)
+        try day_two();
 }
 
 fn day_one() !void {
@@ -78,4 +80,77 @@ fn day_one() !void {
 
     std.debug.print("part 1 result is {d}\n", .{pt1_res});
     std.debug.print("part 2 result is {d}\n", .{pt2_res});
+}
+
+fn day_two() !void {
+    const alloc = std.heap.page_allocator;
+
+    const L = struct {
+        fn parse_id_range(range: []u8) ![2]usize {
+            var it = std.mem.splitSequence(u8, range, "-");
+            const start = try std.fmt.parseInt(usize, it.next().?, 10);
+            const end = try std.fmt.parseInt(usize, it.next().?, 10);
+            std.debug.print("parsed {d} {d}\n", .{ start, end });
+            return .{ start, end };
+        }
+
+        fn is_invalid(num: usize) !bool {
+            var b: [26]u8 = undefined;
+            const str = try std.fmt.bufPrint(&b, "{d}", .{num});
+            std.debug.print("formatted {s}\n", .{str});
+            var i: usize = 0;
+            while (i < str.len / 2) {
+                var j = i + 1;
+                var valid = false;
+                const step = j;
+                while (j < str.len and !valid) {
+                    std.debug.print("checking {s} {s} \n", .{ str[0 .. i + 1], str[j .. j + step] });
+                    if (!std.mem.eql(u8, str[0 .. i + 1], str[j .. j + step])) {
+                        //std.debug.print("found mismatch, so valid {s} {s} \n", .{ str[0 .. i + 1], str[j .. j + step] });
+                        valid = true;
+                        break;
+                    }
+                    j += step;
+                }
+                if (!valid) {
+                    std.debug.print("Found invalid: {s} \n", .{str});
+                    return true;
+                }
+                i += 1;
+            }
+            return false;
+        }
+    };
+    const file = try std.fs.cwd().openFile(
+        "day-2-input.txt",
+        .{},
+    );
+    defer file.close();
+    var read_buf: [1024]u8 = undefined;
+    var file_reader: std.fs.File.Reader = file.reader(&read_buf);
+
+    const reader = &file_reader.interface;
+    var line = std.Io.Writer.Allocating.init(alloc);
+    defer line.deinit();
+
+    var pt1_res: usize = 0;
+    while (true) {
+        _ = reader.streamDelimiter(&line.writer, ',') catch |err| {
+            if (err == error.EndOfStream) break else return err;
+        };
+        _ = reader.toss(1); // skip the delimiter byte.
+        const res = L.parse_id_range(line.written()) catch {
+            break;
+        };
+
+        var i = res[0];
+        while (i <= res[1]) {
+            if (try L.is_invalid(i))
+                pt1_res += i;
+            i += 1;
+        }
+
+        line.clearRetainingCapacity(); // reset the accumulating buffer.
+    }
+    std.debug.print("part 1 result is {d}\n", .{pt1_res});
 }
