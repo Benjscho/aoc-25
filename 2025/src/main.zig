@@ -111,7 +111,7 @@ fn day_two() !void {
         fn is_invalid_n_reps(num: usize) !bool {
             var b: [26]u8 = undefined;
             const str = try std.fmt.bufPrint(&b, "{d}", .{num});
-            std.debug.print("formatted {s}\n", .{str});
+            //std.debug.print("formatted {s}\n", .{str});
             var i: usize = 0;
             while (i < str.len / 2) {
                 var j = i + 1;
@@ -122,7 +122,7 @@ fn day_two() !void {
                         valid = true;
                         break;
                     }
-                    std.debug.print("checking {s} {s} \n", .{ str[0 .. i + 1], str[j .. j + step] });
+                    //std.debug.print("checking {s} {s} \n", .{ str[0 .. i + 1], str[j .. j + step] });
                     if (!std.mem.eql(u8, str[0 .. i + 1], str[j .. j + step])) {
                         //std.debug.print("found mismatch, so valid {s} {s} \n", .{ str[0 .. i + 1], str[j .. j + step] });
                         valid = true;
@@ -131,7 +131,7 @@ fn day_two() !void {
                     j += step;
                 }
                 if (!valid) {
-                    std.debug.print("Found invalid: {s} \n", .{str});
+                    //std.debug.print("Found invalid: {s} \n", .{str});
                     return true;
                 }
                 i += 1;
