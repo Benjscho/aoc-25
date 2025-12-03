@@ -212,6 +212,52 @@ fn day_three() !void {
 
             return try std.fmt.parseInt(usize, &.{ left.val, right.val }, 10);
         }
+
+        // N pointers. This is essentially the same algorithm as above, except
+        // we do it for 12 pointers instead of just 2
+        fn find_highest_num_n(line: []u8) !usize {
+            // n pointers
+            const n = 12;
+            var max_pointers: [n]Pointer = undefined;
+            var pos_trackers: [n]usize = undefined;
+            for (&max_pointers, 0..) |*ptr, i| {
+                ptr.* = Pointer{ .val = line[line.len - n + i], .pos = line.len - n + i };
+            }
+            for (&pos_trackers, 0..) |*ptr, i| {
+                ptr.* = line.len - n + i;
+            }
+            var start_num: [n]u8 = undefined;
+            for (&start_num, 0..) |*ptr, i| {
+                ptr.* = max_pointers[i].val;
+            }
+            std.debug.print("startnum {s}\n", .{start_num});
+
+            var idx: usize = 0;
+            // initial left bound
+            var left_bound: i32 = -1;
+            // Iterate over each of them
+            std.debug.print("line: {s}\n", .{line});
+            while (idx < n) {
+                const ptr = &pos_trackers[idx];
+                while (ptr.* > left_bound + 1) {
+                    std.debug.print("idx: {d}, ptr: {d}, left_bound: {d}\n", .{ idx, ptr.*, left_bound });
+                    ptr.* -= 1;
+                    if (line[ptr.*] >= max_pointers[idx].val) {
+                        max_pointers[idx].pos = ptr.*;
+                        max_pointers[idx].val = line[ptr.*];
+                    }
+                }
+                left_bound = @intCast(max_pointers[idx].pos);
+                std.debug.print("mp val: {c}, pos: {d}\n", .{ max_pointers[idx].val, max_pointers[idx].pos });
+                idx += 1;
+            }
+            var num: [n]u8 = undefined;
+            for (&num, 0..) |*ptr, i| {
+                ptr.* = max_pointers[i].val;
+            }
+
+            return try std.fmt.parseInt(usize, &num, 10);
+        }
     };
     const file = try std.fs.cwd().openFile(
         "day-3-input.txt",
@@ -226,6 +272,7 @@ fn day_three() !void {
     defer line.deinit();
 
     var pt1_res: usize = 0;
+    var pt2_res: usize = 0;
     while (true) {
         _ = reader.streamDelimiter(&line.writer, '\n') catch |err| {
             if (err == error.EndOfStream) break else return err;
@@ -236,7 +283,14 @@ fn day_three() !void {
         };
         pt1_res += res;
 
+        const res_2 = L.find_highest_num_n(line.written()) catch {
+            break;
+        };
+        std.debug.print("Found max num: {d}\n", .{res_2});
+        pt2_res += res_2;
+
         line.clearRetainingCapacity(); // reset the accumulating buffer.
     }
     std.debug.print("part 1 result is {d}\n", .{pt1_res});
+    std.debug.print("part 2 result is {d}\n", .{pt2_res});
 }
