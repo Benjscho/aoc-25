@@ -28,6 +28,8 @@ pub fn main() !void {
         try day_one();
     if (res.args.day == 2)
         try day_two();
+    if (res.args.day == 3)
+        try day_three();
 }
 
 fn day_one() !void {
@@ -175,4 +177,66 @@ fn day_two() !void {
     }
     std.debug.print("part 1 result is {d}\n", .{pt1_res});
     std.debug.print("part 2 result is {d}\n", .{pt2_res});
+}
+
+fn day_three() !void {
+    const alloc = std.heap.page_allocator;
+
+    const L = struct {
+        const Pointer = struct {
+            val: u8,
+            pos: usize,
+        };
+
+        // Two pointers. Assumes that the line has >2 chars
+        fn find_highest_num(line: []u8) !usize {
+            var i = line.len - 2;
+            var j = line.len - 1;
+            var left: Pointer = .{ .val = line[i], .pos = i };
+            var right: Pointer = .{ .val = line[j], .pos = j };
+
+            while (i > 0) {
+                i -= 1;
+                if (line[i] >= left.val) {
+                    left.val = line[i];
+                    left.pos = i;
+                }
+            }
+            while (j > left.pos + 1) {
+                j -= 1;
+                if (line[j] >= right.val) {
+                    right.val = line[j];
+                    right.pos = j;
+                }
+            }
+
+            return try std.fmt.parseInt(usize, &.{ left.val, right.val }, 10);
+        }
+    };
+    const file = try std.fs.cwd().openFile(
+        "day-3-input.txt",
+        .{},
+    );
+    defer file.close();
+    var read_buf: [1024]u8 = undefined;
+    var file_reader: std.fs.File.Reader = file.reader(&read_buf);
+
+    const reader = &file_reader.interface;
+    var line = std.Io.Writer.Allocating.init(alloc);
+    defer line.deinit();
+
+    var pt1_res: usize = 0;
+    while (true) {
+        _ = reader.streamDelimiter(&line.writer, '\n') catch |err| {
+            if (err == error.EndOfStream) break else return err;
+        };
+        _ = reader.toss(1); // skip the delimiter byte.
+        const res = L.find_highest_num(line.written()) catch {
+            break;
+        };
+        pt1_res += res;
+
+        line.clearRetainingCapacity(); // reset the accumulating buffer.
+    }
+    std.debug.print("part 1 result is {d}\n", .{pt1_res});
 }
