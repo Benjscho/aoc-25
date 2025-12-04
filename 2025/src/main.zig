@@ -304,7 +304,7 @@ fn day_four() !void {
     const L = struct {
 
         // Two pointers. Assumes that the line has >2 chars
-        fn find_highest_num(line: [][]u8) !usize {
+        fn find_highest_num(line: [][]u8, part_2: bool) usize {
             var res: usize = 0;
             const rows = line.len;
             const cols = line[0].len;
@@ -313,7 +313,7 @@ fn day_four() !void {
                     if (line[y][x] == '.') {
                         continue;
                     }
-                    std.debug.print("found {c} at {d},{d}\n", .{ line[y][x], y, x });
+                    //std.debug.print("found {c} at {d},{d}\n", .{ line[y][x], y, x });
                     var blocked: i64 = 0;
                     for (0..3) |dy| {
                         for (0..3) |dx| {
@@ -322,16 +322,19 @@ fn day_four() !void {
                             if (ny <= 0 or ny > rows or nx <= 0 or nx > cols or (dx == 1 and dy == 1)) {
                                 continue;
                             }
-                            std.debug.print("checking {d}{d}: {c}\n", .{ ny - 1, nx - 1, line[ny - 1][nx - 1] });
+                            //std.debug.print("checking {d}{d}: {c}\n", .{ ny - 1, nx - 1, line[ny - 1][nx - 1] });
                             if (line[ny - 1][nx - 1] == '@') {
                                 //std.debug.print("blocked\n", .{});
                                 blocked += 1;
                             }
                         }
                     }
-                    std.debug.print("{d},{d} has {} blocked \n", .{ y, x, blocked });
+                    //std.debug.print("{d},{d} has {} blocked \n", .{ y, x, blocked });
                     if (blocked < 4) {
                         res += 1;
+                        if (part_2) {
+                            line[y][x] = '.';
+                        }
                     }
                 }
             }
@@ -361,6 +364,14 @@ fn day_four() !void {
 
         line.clearRetainingCapacity(); // reset the accumulating buffer.
     }
-    const pt1_res: usize = try L.find_highest_num(grid.items);
+    const pt1_res: usize = L.find_highest_num(grid.items, false);
     std.debug.print("part 1 result is {d}\n", .{pt1_res});
+
+    var tmp = L.find_highest_num(grid.items, true);
+    var pt2_res = tmp;
+    while (tmp > 0) {
+        tmp = L.find_highest_num(grid.items, true);
+        pt2_res += tmp;
+    }
+    std.debug.print("part 2 result is {d}\n", .{pt2_res});
 }
