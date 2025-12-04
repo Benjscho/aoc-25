@@ -30,6 +30,8 @@ pub fn main() !void {
         try day_two();
     if (res.args.day == 3)
         try day_three();
+    if (res.args.day == 4)
+        try day_four();
 }
 
 fn day_one() !void {
@@ -293,4 +295,72 @@ fn day_three() !void {
     }
     std.debug.print("part 1 result is {d}\n", .{pt1_res});
     std.debug.print("part 2 result is {d}\n", .{pt2_res});
+}
+
+// Nice classic grid search!
+fn day_four() !void {
+    const alloc = std.heap.page_allocator;
+
+    const L = struct {
+
+        // Two pointers. Assumes that the line has >2 chars
+        fn find_highest_num(line: [][]u8) !usize {
+            var res: usize = 0;
+            const rows = line.len;
+            const cols = line[0].len;
+            for (0..rows) |y| {
+                for (0..cols) |x| {
+                    if (line[y][x] == '.') {
+                        continue;
+                    }
+                    std.debug.print("found {c} at {d},{d}\n", .{ line[y][x], y, x });
+                    var blocked: i64 = 0;
+                    for (0..3) |dy| {
+                        for (0..3) |dx| {
+                            const ny = y + dy;
+                            const nx = x + dx;
+                            if (ny <= 0 or ny > rows or nx <= 0 or nx > cols or (dx == 1 and dy == 1)) {
+                                continue;
+                            }
+                            std.debug.print("checking {d}{d}: {c}\n", .{ ny - 1, nx - 1, line[ny - 1][nx - 1] });
+                            if (line[ny - 1][nx - 1] == '@') {
+                                //std.debug.print("blocked\n", .{});
+                                blocked += 1;
+                            }
+                        }
+                    }
+                    std.debug.print("{d},{d} has {} blocked \n", .{ y, x, blocked });
+                    if (blocked < 4) {
+                        res += 1;
+                    }
+                }
+            }
+            return res;
+        }
+    };
+    const file = try std.fs.cwd().openFile(
+        "day-4-input.txt",
+        .{},
+    );
+    defer file.close();
+    var read_buf: [1024]u8 = undefined;
+    var file_reader: std.fs.File.Reader = file.reader(&read_buf);
+
+    const reader = &file_reader.interface;
+    var line = std.Io.Writer.Allocating.init(alloc);
+    defer line.deinit();
+
+    var grid: std.ArrayListUnmanaged([]u8) = .{};
+    while (true) {
+        _ = reader.streamDelimiter(&line.writer, '\n') catch |err| {
+            if (err == error.EndOfStream) break else return err;
+        };
+        _ = reader.toss(1); // skip the delimiter byte.
+        const l = try alloc.dupe(u8, line.written());
+        try grid.append(alloc, l);
+
+        line.clearRetainingCapacity(); // reset the accumulating buffer.
+    }
+    const pt1_res: usize = try L.find_highest_num(grid.items);
+    std.debug.print("part 1 result is {d}\n", .{pt1_res});
 }
