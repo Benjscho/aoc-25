@@ -386,18 +386,22 @@ fn day_five() !void {
     const Range = struct {
         start: usize,
         end: usize,
+        size: usize,
 
         fn new(start: usize, end: usize) @This() {
-            return @This(){
-                .start = start,
-                .end = end,
-            };
+            return @This(){ .start = start, .end = end, .size = (end - start) + 1 };
         }
 
         fn in_range(self: @This(), val: usize) bool {
             return val >= self.start and val <= self.end;
         }
+
+        fn lessThan(context: void, a: @This(), b: @This()) bool {
+            _ = context;
+            return a.start < b.start;
+        }
     };
+    const MergeResult = union(enum) { merged: Range, not_mergeable };
 
     const L = struct {
         fn parse_ranges(lines: [][]u8) !std.ArrayListUnmanaged(Range) {
@@ -410,6 +414,15 @@ fn day_five() !void {
             }
 
             return ranges;
+        }
+
+        // Assumes a < b
+        fn merge_range(a: Range, b: Range) MergeResult {
+            if (a.end >= b.start) {
+                return .{ .merged = Range.new(a.start, @max(a.end, b.end)) };
+            } else {
+                return .not_mergeable;
+            }
         }
     };
 
@@ -462,4 +475,24 @@ fn day_five() !void {
         line.clearRetainingCapacity(); // reset the accumulating buffer.
     }
     std.debug.print("part 1 result is {d}\n", .{pt1_res});
+
+    std.mem.sort(Range, ranges.items, {}, Range.lessThan);
+    var curr_range = ranges.items[0];
+    var pt2_res: usize = 0;
+    var i: usize = 1;
+
+    while (i < ranges.items.len) {
+        switch (L.merge_range(curr_range, ranges.items[i])) {
+            .merged => |new_range| {
+                curr_range = new_range;
+            },
+            .not_mergeable => {
+                pt2_res += curr_range.size;
+                curr_range = ranges.items[i];
+            },
+        }
+        i += 1;
+    }
+    pt2_res += curr_range.size;
+    std.debug.print("part 2 result is {d}\n", .{pt2_res});
 }
