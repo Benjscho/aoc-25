@@ -32,6 +32,8 @@ pub fn main() !void {
         try day_three();
     if (res.args.day == 4)
         try day_four();
+    if (res.args.day == 5)
+        try day_five();
 }
 
 fn day_one() !void {
@@ -374,4 +376,90 @@ fn day_four() !void {
         pt2_res += tmp;
     }
     std.debug.print("part 2 result is {d}\n", .{pt2_res});
+}
+
+fn day_five() !void {
+    const alloc = std.heap.page_allocator;
+    // Seems easy enough, parse ranges into an object with an "in range"
+    // method, then iterate over ingredients & ranges. Ranges can also have
+    // a sorted order to reduce searching if it's too slow
+    const Range = struct {
+        start: usize,
+        end: usize,
+
+        fn new(start: usize, end: usize) @This() {
+            return @This(){
+                .start = start,
+                .end = end,
+            };
+        }
+
+        fn in_range(self: @This(), val: usize) bool {
+            return val >= self.start and val <= self.end;
+        }
+    };
+
+    const L = struct {
+        fn parse_ranges(lines: [][]u8) !std.ArrayListUnmanaged(Range) {
+            var ranges: std.ArrayListUnmanaged(Range) = .{};
+            for (lines) |range| {
+                var it = std.mem.splitSequence(u8, range, "-");
+                const start: usize = try std.fmt.parseInt(usize, it.next().?, 10);
+                const end: usize = try std.fmt.parseInt(usize, it.next().?, 10);
+                try ranges.append(alloc, Range.new(start, end));
+            }
+
+            return ranges;
+        }
+    };
+
+    const file = try std.fs.cwd().openFile(
+        "day-5-input.txt",
+        .{},
+    );
+    defer file.close();
+    var read_buf: [1024]u8 = undefined;
+    var file_reader: std.fs.File.Reader = file.reader(&read_buf);
+
+    const reader = &file_reader.interface;
+    var line = std.Io.Writer.Allocating.init(alloc);
+    defer line.deinit();
+
+    var input_ranges: std.ArrayListUnmanaged([]u8) = .{};
+    while (true) {
+        _ = reader.streamDelimiter(&line.writer, '\n') catch |err| {
+            if (err == error.EndOfStream) break else return err;
+        };
+        _ = reader.toss(1); // skip the delimiter byte.
+        const l = try alloc.dupe(u8, line.written());
+        if (l.len == 0) {
+            break;
+        }
+        try input_ranges.append(alloc, l);
+
+        line.clearRetainingCapacity(); // reset the accumulating buffer.
+    }
+
+    const ranges = try L.parse_ranges(input_ranges.items);
+    var pt1_res: usize = 0;
+
+    line.clearRetainingCapacity(); // reset the accumulating buffer.
+    while (true) {
+        _ = reader.streamDelimiter(&line.writer, '\n') catch |err| {
+            if (err == error.EndOfStream) break else return err;
+        };
+        _ = reader.toss(1); // skip the delimiter byte.
+        if (line.written().len == 0)
+            break;
+        const val: usize = try std.fmt.parseInt(usize, line.written(), 10);
+        for (ranges.items) |r| {
+            if (r.in_range(val)) {
+                pt1_res += 1;
+                break;
+            }
+        }
+
+        line.clearRetainingCapacity(); // reset the accumulating buffer.
+    }
+    std.debug.print("part 1 result is {d}\n", .{pt1_res});
 }
